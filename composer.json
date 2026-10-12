@@ -1,0 +1,54 @@
+{
+  "name": "kighlander/geo-plz-details",
+  "description": "Reusable German postcode, municipality and subdivision catalog with WGS84 reference points and safe Composer installer.",
+  "type": "library",
+  "license": "proprietary",
+  "homepage": "https://github.com/Kighlander1975/GEO_PLZ_Details",
+  "authors": [
+    {
+      "name": "Kighlander",
+      "role": "Developer"
+    }
+  ],
+  "keywords": [
+    "deutschland",
+    "germany",
+    "postal-code",
+    "plz",
+    "municipality",
+    "subdivision",
+    "geodata",
+    "sqlite",
+    "laravel"
+  ],
+  "require": {
+    "php": "^8.2",
+    "ext-pdo": "*",
+    "ext-zlib": "*"
+  },
+  "suggest": {
+    "ext-pdo_sqlite": "Required for an SQLite database or local fallback.",
+    "ext-pdo_mysql": "Required to install in an existing MySQL/MariaDB application database."
+  },
+  "autoload": {
+    "psr-4": {
+      "Kighlander\\GeoPlzDetails\\": "src/"
+    }
+  },
+  "bin": [
+    "bin/geo-plz-details.php"
+  ],
+  "support": {
+    "issues": "https://github.com/Kighlander1975/GEO_PLZ_Details/issues",
+    "source": "https://github.com/Kighlander1975/GEO_PLZ_Details"
+  },
+  "archive": {
+    "exclude": [
+      "/.github",
+      "/tests",
+      "/data/*.sqlite",
+      "/data/*.sql.gz",
+      "/data/build-report.json"
+    ]
+  }
+}

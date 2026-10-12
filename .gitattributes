@@ -1,0 +1,5 @@
+*.sql.gz binary
+*.sqlite binary
+*.csv.gz binary
+/.github export-ignore
+/tests export-ignore

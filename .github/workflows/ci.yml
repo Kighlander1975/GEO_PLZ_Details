@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_sqlite, pdo_mysql, zlib
+          tools: composer:v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Composer metadata
+        run: composer validate --strict --no-check-publish
+      - name: PHP syntax
+        run: find src bin tests -type f -name '*.php' -print0 | xargs -0 -n 1 php -l
+      - name: Installer detection
+        run: php tests/test_installer_detection.php
+      - name: Synthetic database and PHP integration tests
+        run: python tests/test_build.py
+      - name: Private-data and branding checks
+        run: |
+          if grep -RinE 'shk[-_ ]?momm' --include='*.php' --include='*.md' --include='*.json' --include='*.ps1' --include='*.py' src bin scripts tests docs .github composer.json README.md; then
+            echo 'Unexpected legacy identifier' >&2
+            exit 1
+          fi
+          test ! -f data/geo-plz-details.sqlite
+          test ! -f data/geo-plz-details.sql.gz

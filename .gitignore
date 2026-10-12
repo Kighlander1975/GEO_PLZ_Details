@@ -1,0 +1,24 @@
+# Development environments and Composer artifacts
+/.idea/
+/.vscode/
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.env
+/.env.*
+*.pyc
+__pycache__/
+
+# Application-owned installation state and imported source data
+/.geo-plz-details/
+/data/source/
+/data/*.sqlite
+/data/*.sqlite-wal
+/data/*.sqlite-shm
+/data/*.sql.gz
+/data/build-report.json
+/data/*.tmp
+
+# OS/editor files
+.DS_Store
+Thumbs.db
