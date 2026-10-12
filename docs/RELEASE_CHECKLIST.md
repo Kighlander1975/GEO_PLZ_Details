@@ -17,7 +17,7 @@ Diese Entwicklungsbasis ist **noch kein vollständig freigegebenes Datenprodukt*
 
 ## Produkt und rechtliche Freigabe
 
-- [ ] Eigentümer hat eine **Code-Lizenz** ausgewählt und `LICENSE` ergänzt; `composer.json` angepasst.
+- [x] MIT-Code-Lizenz festgelegt, `LICENSE` erstellt und `composer.json` auf MIT umgestellt.
 - [ ] Für jede GEO-Eingangsquelle Lizenz, Stand, Attribution und Weitergaberecht dokumentiert.
 - [ ] Festlegen, wie Nutzer einen freigegebenen Datensatz beziehen können (z.B. separates versioniertes Datenrelease); keine impliziten Downloads.
 - [ ] Reproduzierbarkeit, Fingerprints und Abdeckung der veröffentlichten Daten prüfen.
@@ -35,3 +35,21 @@ composer require 'kighlander/geo-plz-details:dev-master'
 ```
 
 Für private GitHub-Repositories benötigen die konsumierenden Systeme entsprechende Zugriffsberechtigungen. Ein VCS-Repository muss im **konsumierenden Projekt** konfiguriert werden (Root-Only-Eigenschaft von Composer).
+## Datenlizenz-Freigabe
+
+Die Lizenzstrategie ist in
+`docs/DATA_SOURCES_AND_LICENSE.md` dokumentiert.
+
+Offene Freigabebedingungen:
+
+- [ ] Konkrete Destatis-Produktrechte verifiziert.
+- [ ] GeoNames-Felder und Koordinatenrechte geprueft.
+- [ ] CC-BY-/ODbL-Kombination rechtlich geklaert.
+- [ ] Nicht freigegebene Daten ausgeschlossen.
+- [ ] Copyrights und Attributionen vollstaendig.
+- [ ] ODbL-Pflichten dokumentiert und umgesetzt.
+- [ ] Reproduzierbares Datenrelease erstellt.
+- [ ] Manifest, Quellen und SHA256 kontrolliert.
+- [ ] Oeffentliche Datenfreigabe ausdruecklich erteilt.
+
+Die MIT-Code-Lizenz ersetzt keine Datenfreigabe.

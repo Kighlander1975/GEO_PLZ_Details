@@ -1,11 +1,194 @@
-# Datenherkunft, Nutzungsrechte und Veröffentlichung
+# GEO_PLZ_Details - Datenlizenzen und Freigaberegeln
 
-Der GEO-Katalog wird aus einem lokalen versionierten Release erzeugt, nicht durch einen unkontrollierten Download während der Paketinstallation. Die Eingangsdateien `municipalities.csv.gz`, `places.csv.gz`, `subdivisions.csv.gz` und `place-subdivisions.csv.gz` werden gehasht und im Bericht nachvollziehbar referenziert.
+Stand: 2026-10-12
 
-Die bisherige Datenbasis kombiniert amtliche Gemeinde-/AGS-Informationen, Postleitzahlrelationen aus OpenPLZ, vorhandene Ortskoordinaten und OSM-abgeleitete Ortsteilnamen. **Die Lizenzbedingungen der verschiedenen Quellen sind getrennt zu prüfen** (einschließlich Datenbankrechten und Attribution).
+## 1. Grundsatz
 
-**Noch nicht freigegeben:** ein bevölkerter Deutschland-Dump, Rohdaten/Downloads, räumliche Zwischenstände und ungeprüfte postalische C-Zuordnungen. Es darf kein Dump oder Datenarchiv ins öffentliche Git-Repository hochgeladen werden, bis Quellversionen, Rechte und Pflichten dokumentiert sowie bestätigt wurden.
+Der PHP-Quellcode steht unter MIT.
 
-**Quellcode-Lizenz:** derzeit `proprietary` als Platzhalter für den nicht freigegebenen Entwicklungsstand. Vor öffentlicher Nachnutzung muss der Repository-Inhaber ausdrücklich eine Code-Lizenz wählen, etwa MIT oder Apache-2.0 (jeweils separat von Datenlizenzen), und die entsprechende `LICENSE`-Datei bereitstellen. Das Paket gibt derzeit **keine freie Lizenz** vor.
+Copyright (c) 2026 Kighlander.
 
-Die technischen SHA256-Protokolle beweisen Dateiidentität, nicht Rechtskonformität oder amtliche Korrektheit. Die bisherige Postal-C-Evidenz bleibt ausdrücklich nicht final akzeptiert.
+Die Datenbank und ihre Quelldaten haben
+eigenstaendige Lizenz- und Copyrightbedingungen.
+
+Die MIT-Lizenz des Codes ist keine Lizenz
+fuer fremde geografische Daten.
+
+## 2. OpenStreetMap und OpenPLZ
+
+OpenStreetMap contributors:
+https://www.openstreetmap.org/copyright
+
+ODbL 1.0:
+https://opendatacommons.org/licenses/odbl/1-0/
+
+OpenPLZ:
+https://github.com/openpotato/openplzapi.data
+
+Geofabrik:
+https://download.geofabrik.de/
+
+Historischer OSM-Datenstand: 2026-09-01.
+
+Die ODbL erlaubt auch gewerbliche Nutzung.
+Abgeleitete Datenbanken unterliegen den
+anwendbaren ODbL-Bedingungen.
+
+Diese umfassen insbesondere Attribution,
+Share-Alike und gegebenenfalls die
+Bereitstellung der abgeleiteten Datenbank
+oder lizenzgemaess zulaessiger Alternativen.
+
+## 3. GeoNames
+
+Originalquelle:
+https://download.geonames.org/export/zip/DE.zip
+
+Lizenzhinweise:
+https://download.geonames.org/export/zip/readme.txt
+
+Die Original-README bezeichnet die Daten
+ausdruecklich als CC BY 4.0, verlinkt jedoch
+noch auf CC BY 3.0.
+
+Diese Inkonsistenz ist dokumentiert.
+
+Eine pauschale Kompatibilitaet zwischen
+CC-BY-Datenbankrechten und ODbL wird
+nicht vorausgesetzt.
+
+GeoNames-Daten und daraus abgeleitete
+Koordinaten duerfen daher nur dann in
+einen oeffentlichen kombinierten Release
+einfliessen, wenn eine tragfaehige
+Rechtsgrundlage fuer die Kombination
+und deren konkrete Verbreitung besteht.
+
+Alternativen sind beispielsweise:
+- nachgewiesene gesonderte Erlaubnis,
+- rechtlich und technisch getrennte Daten,
+- Ersatz durch kompatible Quellen,
+- Ausschluss entsprechender Inhalte.
+
+Die Entscheidung muss releasebezogen
+und nachvollziehbar dokumentiert werden.
+
+## 4. Destatis
+
+Verwendete amtliche Quellen:
+- Gemeindeverzeichnis GV100AD
+- Gemeindeverzeichnis-Auszug
+
+Herausgeber:
+Statistisches Bundesamt und gegebenenfalls
+Statistische Aemter der Laender.
+
+https://www.destatis.de/
+
+Allgemeine Nutzungsbedingungen:
+https://www.destatis.de/DE/Service/Impressum/copyright-allgemein.html
+
+Die allgemeinen Veroeffentlichungsbedingungen
+ermoeglichen grundsaetzlich Weiterverwendung
+unter Beachtung der geltenden Quellenhinweise.
+
+Vor einem oeffentlichen kombinierten Release
+sind die Bedingungen des konkreten Produkts,
+Drittrechte und eventuelle Einschraenkungen
+zu verifizieren.
+
+Die Quellen werden nicht allein aufgrund
+allgemeiner Nutzungsbedingungen automatisch
+unter ODbL gestellt.
+
+## 5. Deutsche Post
+
+Historische Aenderungs-PDFs:
+Deutsche Post AG.
+
+Keine pauschale Weitergabelizenz bestaetigt.
+
+Die Originaldokumente werden nicht Bestandteil
+des oeffentlichen Composer-Pakets.
+
+Die historische Relation
+
+31536 / AGS 03241012
+
+hat den Herkunftscode deutsche_post_delta.
+
+Eine unabhaengige amtliche Bestaetigung
+durch die Stadt Neustadt am Ruebenberge
+wurde dokumentiert.
+
+Siehe docs/POSTAL_EVIDENCE.md.
+
+Historische Provenienz darf nicht
+nachtraeglich ohne Nachweis umgeschrieben werden.
+
+## 6. Historische Datenbasis
+
+Release: de-2026-09-v1.
+
+PLZ-Gemeinde-Beziehungen:
+
+- 12.745 openplz
+- 86 geonames_verified
+- 5 openplz_remapped
+- 2 manual_review
+- 1 deutsche_post_delta
+
+Gesamt: 12.839 Beziehungen.
+
+Diese Werte bezeichnen relation_source.
+
+ACHTUNG:
+Eine Beziehung aus OpenPLZ kann trotzdem
+Koordinaten aus GeoNames verwenden.
+
+Deshalb muss die Datenherkunft mindestens
+auch fuer Koordinaten, Namen, Zuordnungen
+und weitere uebernommene Inhalte
+feldbezogen geprueft werden.
+
+Das historische kombinierte Release
+ist kein oeffentlich freigegebenes Datenprodukt.
+
+## 7. Verbindliche Freigaberegeln
+
+Vor jeder oeffentlichen Datenveroeffentlichung:
+
+1. Exakte Quellstaende und URLs nachweisen.
+2. Quell-Fingerprints und SHA256 dokumentieren.
+3. Feldbezogene Datenherkunft pruefen.
+4. Lizenz und Rechteinhaber jeder Quelle erfassen.
+5. Rechtliche Kombinierbarkeit verifizieren.
+6. Erforderliche Copyrights und Attributionen beilegen.
+7. ODbL-Verpflichtungen erfuellen.
+8. Alle nicht freigegebenen Bestandteile ausschliessen.
+9. Reproduzierbaren Build dokumentieren.
+10. Release-Manifest und Integritaet verifizieren.
+11. Datenrelease ausdruecklich freigeben.
+
+Technisch gruene Tests allein ersetzen
+keine rechtliche Datenfreigabe.
+
+## 8. Aktueller Status
+
+CODE_LICENSE: MIT
+CODE_LICENSE_STATUS: FINAL
+
+DATA_LICENSE_POLICY: DOCUMENTED
+OSM_DERIVED_LICENSE: ODbL-1.0
+GEONAMES_NOTICE: CC-BY-4.0_WITH_OLD_3.0_LINK
+DESTATIS_PRODUCT_RIGHTS: REVIEW_REQUIRED
+DEUTSCHE_POST_DATA_REUSE: NOT_CLEARED
+
+HISTORICAL_MIXED_RELEASE: NOT_APPROVED
+PUBLIC_DATA_RELEASE: BLOCKED
+
+Die Lizenzstrategie ist festgelegt.
+
+Die konkrete oeffentliche Freigabe einer
+kombinierten Deutschland-Datenbank bleibt
+von einer separaten Rechtepruefung abhaengig.

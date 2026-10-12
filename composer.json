@@ -2,7 +2,7 @@
   "name": "kighlander/geo-plz-details",
   "description": "Reusable German postcode, municipality and subdivision catalog with WGS84 reference points and safe Composer installer.",
   "type": "library",
-  "license": "proprietary",
+  "license": "MIT",
   "homepage": "https://github.com/Kighlander1975/GEO_PLZ_Details",
   "authors": [
     {

@@ -5,6 +5,7 @@ Wiederverwendbares, **framework-unabhängiges PHP-/Composer-Paket** zur Auswahl 
 - **Entwickler:** Kighlander
 - **Composer:** `kighlander/geo-plz-details`
 - **PHP:** 8.2 oder neuer
+
 **Status:** 0.3.0-Preview (noch kein öffentlich freigegebenes Datenrelease)
 
 > [!IMPORTANT]
@@ -103,11 +104,35 @@ composer validate --strict
 
 Die automatischen Tests nutzen **synthetische Testdaten**. Zusätzlich gibt es eine GitHub-Actions-CI. Der Installer muss vor einem Release mit aktivierten PHP-Treibern (`pdo_sqlite` / `pdo_mysql`) und einer isolierten Testdatenbank geprüft werden.
 
+## Lizenzmodell und Datenfreigabe
+
+**PHP-Code:** MIT License, Copyright (c) 2026 Kighlander.
+
+Private und gewerbliche Nutzung, Veraenderung und Weitergabe
+sind unter Einhaltung der MIT-Lizenz erlaubt. Copyright-
+und Lizenzhinweise muessen bei Weitergabe erhalten bleiben.
+
+**GEO-Daten:** Die Datenquellen besitzen eigenstaendige
+Lizenz- und Copyrightbedingungen. Insbesondere unterliegen
+OSM-/OpenPLZ-Ableitungen der ODbL 1.0.
+
+Das historische kombinierte Deutschland-Datenrelease ist
+nicht fuer die oeffentliche Weitergabe freigegeben.
+Eine rechtlich gepruefte Datenveroeffentlichung benoetigt
+eine separate Freigabeentscheidung.
+
+Dokumentation:
+
+- [MIT-Lizenz](LICENSE)
+- [Quellen und Copyrights](THIRD_PARTY_NOTICES.md)
+- [Datenlizenzmodell](docs/DATA_SOURCES_AND_LICENSE.md)
+- [Release-Checkliste](docs/RELEASE_CHECKLIST.md)
+
 ## Veröffentlichung und Einschränkungen
 
 - Derzeit **Preview-Code**. Noch keine stabile Composer-Version und keine zugesagte vollständige Deutschland-Datenabdeckung.
 - Das aktuelle alte V1-CSV-Release enthält keine Ortsteilkoordinaten und keine echten Subdivision-Hierarchien; dann verwendet die Resolver-Methode zulässigerweise einen übergeordneten PLZ-/Ortspunkt. Das Modul kann spätere detailreichere Releases verarbeiten.
-- Die Nutzungs-/Verbreitungslizenz des **Codes** muss vor offener Wiederverwendung endgültig festgelegt werden (`proprietary` ist ein Platzhalter). Die Lizenzprüfung der **Daten** ist davon unabhängig.
+- **Code-Lizenz: MIT.** Copyright (c) 2026 Kighlander. Die Rechte der GEO-Datenquellen bleiben davon getrennt.
 - Installation in eine bereits vorhandene Anwendungsdatenbank erstellt eigene Tabellen, löst aber keine alten Fremdtabellen auf und migriert keine Benutzerprofile.
 - Einmal installierte Datenstände werden nicht still überschrieben. Updates benötigen einen gesonderten, geprüften Migrationspfad.
 
