@@ -32,6 +32,22 @@ An explicitly configured inaccessible database fails rather than falling back.
   release version and table prefix, but **not credentials**.
 - Existing PostgreSQL and SQL Server configurations are not yet supported.
 
+## CSV identity contract (V1 and V2)
+The compressed `place-subdivisions.csv.gz` file requires `ags` and
+`postal_code`, plus at least one of the following identity forms:
+
+- V1: `subdivision_type` and `subdivision_name`
+- V2: `subdivision_key`
+
+If a row provides a non-empty `subdivision_key`, that key takes precedence.
+The V1 type/name pair is used only when no key is provided.
+Referenced subdivisions must exist and belong to the same municipality.
+Missing or ambiguous references are rejected; no postal relationship is
+inferred from geographic proximity.
+
+The importer accepts V1, V2, and mixed-column release schemas. It does
+not silently create subdivisions or postal relations.
+
 ## API and user data separation
 
 The package provides only generic catalog data and does not create application

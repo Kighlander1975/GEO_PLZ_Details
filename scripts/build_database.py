@@ -19,7 +19,7 @@ EXPECTED_COLUMNS = {
     "municipalities": {"country_code", "ags", "ars", "name", "type_code", "type_label", "admin_postal_code", "centroid_latitude", "centroid_longitude", "centroid_source_date"},
     "places": {"ags", "postal_code", "latitude", "longitude", "relation_source", "coordinate_source", "coordinate_method", "coordinate_accuracy"},
     "subdivisions": {"ags", "type", "name"},
-    "place-subdivisions": {"ags", "postal_code", "subdivision_type", "subdivision_name"},
+    "place-subdivisions": {"ags", "postal_code"},
 }
 
 
@@ -44,6 +44,14 @@ def rows_of(release: Path, dataset: str):
         require(reader.fieldnames is not None, f"Missing CSV header: {path}")
         require(EXPECTED_COLUMNS[dataset] <= set(reader.fieldnames),
                 f"Incompatible {dataset} schema: {reader.fieldnames}")
+        if dataset == "place-subdivisions":
+            headers = set(reader.fieldnames)
+            has_key = "subdivision_key" in headers
+            has_legacy = {"subdivision_type", "subdivision_name"} <= headers
+            require(
+                has_key or has_legacy,
+                f"Missing place-subdivision identity columns: {path}"
+            )
         for line_no, row in enumerate(reader, start=2):
             require(None not in row, f"Too many CSV columns: {path}:{line_no}")
             yield row

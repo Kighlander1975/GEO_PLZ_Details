@@ -10,6 +10,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+from contextlib import closing
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -97,6 +98,70 @@ def run():
                 subprocess.run([php, str(ROOT / 'tests/test_installation.php'), str(release), str(base / 'test-fallback-app')], check=True)
             else:
                 print('[SKIP] PHP runtime integration (pdo_sqlite not installed)')
+        # V2 regression: postal links can carry stable keys without
+        # the older subdivision_type and subdivision_name columns.
+        keyed_release = base / "de-test-v2-keyed"
+        keyed_release.mkdir()
+
+        for dataset in ("municipalities", "places", "subdivisions"):
+            filename = dataset + ".csv.gz"
+            shutil.copyfile(
+                release / filename,
+                keyed_release / filename
+            )
+
+        gz_csv(
+            keyed_release,
+            "place-subdivisions",
+            ["ags", "postal_code", "subdivision_key"],
+            [
+                dict(ags="03404000", postal_code="49086", subdivision_key="osm:r:1"),
+                dict(ags="03404000", postal_code="49086", subdivision_key="osm:r:2"),
+                dict(ags="03404000", postal_code="49086", subdivision_key="osm:r:3"),
+            ],
+        )
+
+        keyed_output = base / "keyed-out"
+
+        keyed_build = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts/build_database.py"),
+                "--release",
+                str(keyed_release),
+                "--output",
+                str(keyed_output),
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        assert json.loads(keyed_build.stdout)["status"] == "CREATED"
+
+        with closing(sqlite3.connect(keyed_output / "geo-plz-details.sqlite")) as keyed_db:
+            keyed_db.execute("PRAGMA foreign_keys=ON")
+            assert keyed_db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+            assert keyed_db.execute("PRAGMA foreign_key_check").fetchall() == []
+            assert keyed_db.execute(
+                "SELECT COUNT(*) FROM place_subdivisions"
+            ).fetchone()[0] == 3
+            assert keyed_db.execute(
+                "SELECT COUNT(*) FROM subdivisions WHERE parent_subdivision_key IS NOT NULL"
+            ).fetchone()[0] == 2
+
+        if php and "pdo_sqlite" in php_modules:
+            subprocess.run(
+                [
+                    php,
+                    str(ROOT / "tests/test_installation.php"),
+                    str(keyed_release),
+                    str(base / "v2-php-isolated" / "test-keyed-app"),
+                ],
+                check=True,
+            )
+
+        print("[PASS] Key-only V2: Python builder and PHP installer")
         print('[PASS] Import, integrity, hierarchy, postcode multiplicity, SQL dump, lineage, safe resume')
 
 

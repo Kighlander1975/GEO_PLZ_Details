@@ -16,7 +16,7 @@ final class ReleaseImporter
         'places' => ['ags', 'postal_code', 'latitude', 'longitude', 'relation_source',
             'coordinate_source', 'coordinate_method', 'coordinate_accuracy'],
         'subdivisions' => ['ags', 'type', 'name'],
-        'place-subdivisions' => ['ags', 'postal_code', 'subdivision_type', 'subdivision_name'],
+        'place-subdivisions' => ['ags', 'postal_code'],
     ];
     private const TABLES = ['metadata', 'municipalities', 'places', 'subdivisions', 'place_subdivisions'];
 
@@ -62,6 +62,16 @@ final class ReleaseImporter
             foreach (self::DATASETS[$dataset] as $required) {
                 if (!in_array($required, $header, true)) {
                     throw new RuntimeException('Required column ' . $required . ' missing: ' . $file);
+                }
+            }
+            if ($dataset === 'place-subdivisions') {
+                $hasKey = in_array('subdivision_key', $header, true);
+                $hasLegacyIdentity = in_array('subdivision_type', $header, true)
+                    && in_array('subdivision_name', $header, true);
+                if (!$hasKey && !$hasLegacyIdentity) {
+                    throw new RuntimeException(
+                        'Place-subdivision release needs subdivision_key or subdivision_type and subdivision_name.'
+                    );
                 }
             }
             $line = 1;
