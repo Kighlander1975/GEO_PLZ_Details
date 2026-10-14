@@ -6,6 +6,9 @@ namespace Kighlander\GeoPlzDetails\Installer;
 
 use PDO;
 use RuntimeException;
+use Kighlander\GeoPlzDetails\ReleaseSafety\ReleaseGate;
+
+require_once __DIR__ . '/../ReleaseSafety/ReleaseGate.php';
 
 /** Offline importer. Does not call the network or read live OSM sources. */
 final class ReleaseImporter
@@ -24,6 +27,8 @@ final class ReleaseImporter
     public static function source(string $releaseDirectory): array
     {
         $releaseDirectory = rtrim($releaseDirectory, '/\\');
+        // Authorization, license lineage, and relation-level final approvals are required.
+        $authorization = ReleaseGate::verifyRelease($releaseDirectory);
         $hashes = [];
         foreach (self::DATASETS as $name => $_) {
             $file = $releaseDirectory . '/' . $name . '.csv.gz';
@@ -32,12 +37,17 @@ final class ReleaseImporter
             }
             $hashes[$name . '.csv.gz'] = strtoupper((string) hash_file('sha256', $file));
         }
+        $hashes['release-authorization.json'] = strtoupper((string) hash_file('sha256', $releaseDirectory . '/release-authorization.json'));
+        $hashes['postal-final-approvals.csv.gz'] = strtoupper((string) hash_file('sha256', $releaseDirectory . '/postal-final-approvals.csv.gz'));
+        $hashes['data-license-lineage.json'] = strtoupper((string) hash_file('sha256', $releaseDirectory . '/data-license-lineage.json'));
+        $hashes['release-signature.json'] = strtoupper((string) hash_file('sha256', $releaseDirectory . '/release-signature.json'));
         if (is_file($releaseDirectory . '/manifest.json')) {
             $hashes['manifest.json'] = strtoupper((string) hash_file('sha256', $releaseDirectory . '/manifest.json'));
         }
         ksort($hashes);
         return [
             'version' => basename($releaseDirectory),
+            'authorization' => $authorization,
             'hashes' => $hashes,
             'fingerprint' => strtoupper(hash('sha256', (string) json_encode($hashes, JSON_THROW_ON_ERROR))),
         ];
@@ -184,7 +194,8 @@ final class ReleaseImporter
         foreach ($db->query('SELECT `key`,`value` FROM ' . $prefix . 'metadata') as $row) {
             $metadata[$row['key']] = $row['value'];
         }
-        if (($metadata['format_version'] ?? '') !== '2'
+        ReleaseGate::assertRuntimeDatabase($db, $prefix);
+        if (($metadata['format_version'] ?? '') !== '3'
             || ($metadata['release_fingerprint'] ?? '') !== $source['fingerprint']) {
             throw new RuntimeException('Existing GEO tables have an unknown or different dataset. No automatic overwrite.');
         }
@@ -213,7 +224,7 @@ final class ReleaseImporter
         if ($driver === 'mysql' || $driver === 'mariadb') {
             $tail = ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
             return [
-                "CREATE TABLE $m (`key` VARCHAR(191) PRIMARY KEY, `value` TEXT NOT NULL)$tail",
+                "CREATE TABLE $m (`key` VARCHAR(191) PRIMARY KEY, `value` LONGTEXT NOT NULL)$tail",
                 "CREATE TABLE $u (ags CHAR(8) PRIMARY KEY, country_code CHAR(2) NOT NULL, ars CHAR(12) NOT NULL UNIQUE, name VARCHAR(255) NOT NULL, display_name VARCHAR(255) NULL, type_code CHAR(2) NOT NULL, type_label VARCHAR(64) NOT NULL, admin_postal_code CHAR(5) NULL, centroid_latitude DOUBLE NULL, centroid_longitude DOUBLE NULL, centroid_source_date DATE NULL)$tail",
                 "CREATE TABLE $p (id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, ags CHAR(8) NOT NULL, postal_code CHAR(5) NOT NULL, latitude DOUBLE NOT NULL, longitude DOUBLE NOT NULL, relation_source VARCHAR(32) NOT NULL, coordinate_source VARCHAR(32) NOT NULL, coordinate_method VARCHAR(32) NOT NULL, coordinate_accuracy INT NULL, UNIQUE KEY uq_ags_postal (ags,postal_code), INDEX idx_postal (postal_code,ags), FOREIGN KEY (ags) REFERENCES $u(ags))$tail",
                 "CREATE TABLE $s (subdivision_key VARCHAR(128) PRIMARY KEY, ags CHAR(8) NOT NULL, type VARCHAR(32) NOT NULL, name VARCHAR(255) NOT NULL, parent_subdivision_key VARCHAR(128) NULL, display_name VARCHAR(255) NULL, latitude DOUBLE NULL, longitude DOUBLE NULL, coordinate_source VARCHAR(32) NULL, coordinate_reference VARCHAR(96) NULL, coordinate_method VARCHAR(32) NULL, coordinate_quality VARCHAR(32) NULL, hierarchy_method VARCHAR(32) NULL, administrative_level INT NULL, place_type VARCHAR(32) NULL, source VARCHAR(32) NULL, source_reference VARCHAR(96) NULL, INDEX idx_subdivisions (ags,name), FOREIGN KEY (ags) REFERENCES $u(ags), FOREIGN KEY (parent_subdivision_key) REFERENCES $s(subdivision_key))$tail",
@@ -227,6 +238,12 @@ final class ReleaseImporter
     public static function install(PDO $db, string $prefix, string $release, array $source): array
     {
         self::validatePrefix($prefix);
+        // Re-verify before ANY schema write: caller-supplied source cannot grant approval.
+        $verified = self::source($release);
+        if (!isset($source['fingerprint']) || !hash_equals($verified['fingerprint'], (string) $source['fingerprint'])) {
+            throw new RuntimeException('D45 BLOCKED: source changed since installation plan.');
+        }
+        $source = $verified;
         $reused = self::alreadyInstalled($db, $prefix, $source);
         if ($reused !== null) {
             return $reused;
@@ -241,20 +258,67 @@ final class ReleaseImporter
                 }
             }
             $db->beginTransaction();
+            $authorizationBytes = file_get_contents(rtrim($release, '/\\') . '/release-authorization.json');
+            $signatureDocument = json_decode((string) file_get_contents(
+                rtrim($release, '/\\') . '/release-signature.json'), true, 32, JSON_THROW_ON_ERROR);
+            if ($authorizationBytes === false || !is_array($signatureDocument)
+                || !is_string($signatureDocument['signature_base64'] ?? null)
+                || !is_string($signatureDocument['key_id'] ?? null)) {
+                throw new RuntimeException('D46 BLOCKED: signed importer receipt incomplete.');
+            }
             $metadata = [
-                'format_version' => '2',
+                'format_version' => '3',
+                'release_gate_policy_version' => ReleaseGate::POLICY_VERSION,
+                'runtime_release_status' => 'APPROVED',
+                'postal_final_acceptance' => 'true',
+                'data_license_approved' => 'true',
+                'coordinate_review_approved' => 'true',
+                'identity_review_approved' => 'true',
+                'country_coverage' => 'DE:16',
+                'release_authorization_sha256' => $source['hashes']['release-authorization.json'],
                 'dataset_version' => $source['version'],
                 'release_fingerprint' => $source['fingerprint'],
                 'source_sha256' => json_encode($source['hashes'], JSON_THROW_ON_ERROR),
                 'coordinate_system' => 'EPSG:4326',
                 'subdivision_coordinate_fallback' => 'selected > ancestor > postal_place > municipality',
-                'formal_postal_c_acceptance' => 'false',
+                'formal_postal_c_acceptance' => 'true',
+                'runtime_authorization_base64' => base64_encode($authorizationBytes),
+                'runtime_signature_base64' => (string) $signatureDocument['signature_base64'],
+                'runtime_signer_key_id' => (string) $signatureDocument['key_id'],
+                'approved_count_municipalities' => (string) $source['authorization']['counts']['municipalities'],
+                'approved_count_places' => (string) $source['authorization']['counts']['places'],
+                'approved_count_subdivisions' => (string) $source['authorization']['counts']['subdivisions'],
+                'approved_count_place_subdivisions' => (string) $source['authorization']['counts']['place_subdivisions'],
             ];
             $meta = $db->prepare('INSERT INTO ' . $prefix . 'metadata (`key`,`value`) VALUES (?,?)');
             foreach ($metadata as $key => $value) {
                 $meta->execute([$key, $value]);
             }
             $counts = self::populate($db, $prefix, $release);
+            foreach (['municipalities','places','subdivisions','place_subdivisions'] as $kind) {
+                if ($counts[$kind] !== $source['authorization']['counts'][$kind]) {
+                    throw new RuntimeException('D45 BLOCKED: populated count does not match approved manifest: ' . $kind);
+                }
+            }
+            // Independently enforce all states in every runtime entity and postal selection.
+            foreach (['municipalities','places','subdivisions'] as $kind) {
+                $states = [];
+                foreach ($db->query('SELECT DISTINCT SUBSTR(ags,1,2) AS state FROM ' . $prefix . $kind) as $record) {
+                    $states[] = (string) $record['state'];
+                }
+                sort($states, SORT_STRING);
+                if ($states !== ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16']) {
+                    throw new RuntimeException('D45 BLOCKED: incomplete 16-state runtime table: ' . $kind);
+                }
+            }
+            $states = [];
+            foreach ($db->query('SELECT DISTINCT SUBSTR(p.ags,1,2) AS state FROM ' . $prefix . 'place_subdivisions ps JOIN ' . $prefix . 'places p ON p.id=ps.place_id') as $record) {
+                $states[] = (string) $record['state'];
+            }
+            sort($states, SORT_STRING);
+            if ($states !== ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16']) {
+                throw new RuntimeException('D45 BLOCKED: incomplete 16-state postal subdivision coverage.');
+            }
             $db->commit();
             return [
                 'status' => 'CREATED', 'dataset_version' => $source['version'],

@@ -83,3 +83,15 @@ reuses a configured MySQL/MariaDB/SQLite application database with namespaced
 change the original application's existing GEO migrations/tables or user records.
 This replaces the initial v0.1 assumption that every application should receive
 its own separate SQLite catalog. See `docs/INSTALLER.md`.
+
+
+## D.52 – Signed Release-Gate und technische Vorschau
+
+Seit dem D.46/D.52-Sicherheitsvertrag lehnt `GeoCatalog` alle alten, unsignierten
+V1-/V2-Releases sowie manuell gesetzte Freigabefelder ab.
+Ein echter produktiver Import benötigt einen signierten vollständigen Release-Nachweis
+und einen separat genehmigten Herausgeber-Schlüssel (derzeit leer).
+
+Für gezielte private Tests mit dem noch **nicht** fachlich freigegebenen 16-Länder-Stand
+existiert die ausdrücklich aktivierbare `InternalPreview`-API. Die isolierte D.51-Datenbank
+bleibt außerhalb des Composer-/Git-Repositories. Siehe `PRIVATE_PREVIEW_DE.md`.

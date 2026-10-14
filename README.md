@@ -4,12 +4,46 @@ Wiederverwendbares, **framework-unabhängiges PHP-/Composer-Paket** zur Auswahl 
 
 - **Entwickler:** Kighlander
 - **Composer:** `kighlander/geo-plz-details`
-- **PHP:** 8.2 oder neuer
+- **PHP:** 8.2 oder neuer; ext-sodium für den signierten Produktionsvertrag
 
 **Status:** 0.3.0-Preview (noch kein öffentlich freigegebenes Datenrelease)
 
 > [!IMPORTANT]
 > Das Paket enthält bewusst **keine bundesweit befüllte Datenbank**. Die rechtliche Zulässigkeit der Weitergabe der zugrunde liegenden GEO-Daten ist noch zu prüfen. Ein vorhandenes, passendes und rechtmäßig verwendbares GEO-CSV-Release muss vor der Datenbankinstallation bereitgestellt werden. Die alte postalische C-Evidenz wird nicht ungeprüft veröffentlicht.
+
+
+## Deutschlandweit intern testen (D.51; noch kein Datenrelease)
+
+Die separate D.51-Testdatenbank `geo_d51_*` umfasst **alle 16 Bundesländer**, 10.943 Gemeinden,
+12.839 PLZ-Gemeinde-Verknüpfungen, 75.945 technische Subdivisions und
+77.062 nicht final freigegebene postalische Kandidaten. Die Datenbank liegt **außerhalb dieses
+Git-/Composer-Repositories**. Das Git-Repository enthält keine ungeprüften Datendumps.
+
+Der neue Kommandozeilen-Zugang ist **nur für ausdrücklich aktivierte private Tests** gedacht.
+Er nutzt `Kighlander\GeoPlzDetails\InternalPreview\Catalog` und `Connection`, **nicht** den
+signiert freigabepflichtigen `GeoCatalog`. Aufrufbeispiele (PowerShell):
+
+```powershell
+$env:GEO_PLZ_PRIVATE_DATABASE = 'geo_d51_20261014_113815_4434e06e' # eigene DB einsetzen
+$env:GEO_PLZ_PRIVATE_HOST = '127.0.0.1'
+$env:GEO_PLZ_PRIVATE_PORT = '3306'
+$env:GEO_PLZ_PRIVATE_USER = 'readonly_geo' # Konto mit SELECT-Recht
+# Passwort nur verdeckt per sicherer Eingabe/Prozessumgebung setzen; nicht in Skripten speichern.
+php bin/geo-plz-details.php preview-check --private-preview
+php bin/geo-plz-details.php preview-lookup 49086 --private-preview
+php bin/geo-plz-details.php preview-subdivisions 49086 03404000 --private-preview
+php bin/geo-plz-details.php preview-resolve 49086 03404000 de:03404000:osm:n:3750979925 --private-preview
+```
+
+Mehrdeutigkeiten liefern mehrere auswählbare Stadtteile zurück; tiefere Auswahl ist freiwillig.
+Fehlende Kandidaten verhindern **nicht** die PLZ-/Gemeindeauswahl. Der Koordinaten-Fallback
+ist derzeit bewusst der V1-PLZ-Ortspunkt, gekennzeichnet durch `coordinate_level`.
+
+**Wichtig:** `preview-*` ausschließlich in einer privaten Entwicklungs-/Testumgebung ausführen,
+niemals ungeprüft an öffentliche Webendpunkte hängen. Die 77.062 Beziehungen bleiben
+`NOT_APPROVED`; `GeoCatalog` und `install` verweigern weiterhin unsignierte Releases.
+Die öffentliche Verteilung des kombinierten Deutschland-Datensatzes ist **nicht** freigegeben.
+Weitere technische Hinweise: [Privater 16-Länder-Lookup](docs/PRIVATE_PREVIEW_DE.md).
 
 ## Ziel und Funktion
 

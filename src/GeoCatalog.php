@@ -8,6 +8,9 @@ use DomainException;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
+use Kighlander\GeoPlzDetails\ReleaseSafety\ReleaseGate;
+
+require_once __DIR__ . '/ReleaseSafety/ReleaseGate.php';
 
 /**
  * Read-only, framework-independent German municipality/postcode/subdivision API.
@@ -46,6 +49,8 @@ final class GeoCatalog
             }
         }
         $this->db = $database;
+        // Fail-closed before any public lookup is possible, including fromProject().
+        ReleaseGate::assertRuntimeDatabase($this->db, $this->tablePrefix);
     }
 
     /** @return list<array<string,mixed>> */

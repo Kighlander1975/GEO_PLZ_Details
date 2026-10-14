@@ -105,7 +105,7 @@ final class Installer
                     'dataset_version' => $plan['source']['version'],
                     'release_fingerprint' => $plan['source']['fingerprint'],
                     'connection_identity' => ConnectionDiscovery::connectionIdentity($connection),
-                    'formal_postal_c_acceptance' => false,
+                    'formal_postal_c_acceptance' => true, // Only after verified signed D.46 import succeeds.
                 ]);
             }
             return $result + [

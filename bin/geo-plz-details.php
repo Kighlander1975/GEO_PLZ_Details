@@ -26,11 +26,14 @@ GEO_PLZ_Details (Composer package)
   geo-plz-details install [--project=DIR] [--release=DIR] [--sqlite] [--yes] [--dry-run]
   geo-plz-details status|check|lookup PLZ|subdivisions PLZ AGS|resolve PLZ AGS [KEY]
   geo-plz-details distance LAT1 LON1 LAT2 LON2
+  geo-plz-details preview-check|preview-lookup PLZ|preview-subdivisions PLZ AGS
+  geo-plz-details preview-resolve PLZ AGS [KEY]
 
 Options: --project=DIR (app root, default current directory),
          --db=FILE (legacy standalone SQLite mode),
          --sqlite (explicitly use local fallback instead of configured app DB),
-         --yes (confirm creation of prefixed tables).
+         --yes (confirm creation of prefixed tables),
+         --private-preview (explicit opt-in, requires GEO_PLZ_PRIVATE_* environment).
 
 TXT);
     exit(2);
@@ -45,10 +48,13 @@ try {
         }
         $pair = explode('=', substr($arg, 2), 2);
         $flag = $pair[0];
-        if (!in_array($flag, ['project', 'release', 'sqlite', 'yes', 'dry-run', 'db', 'prefix'], true)
-            || (count($pair) === 1 && !in_array($flag, ['sqlite', 'yes', 'dry-run'], true))
-            || (count($pair) === 2 && in_array($flag, ['sqlite', 'yes', 'dry-run'], true))) {
+        if (!in_array($flag, ['project', 'release', 'sqlite', 'yes', 'dry-run', 'db', 'prefix', 'private-preview'], true)
+            || (count($pair) === 1 && !in_array($flag, ['sqlite', 'yes', 'dry-run', 'private-preview'], true))
+            || (count($pair) === 2 && in_array($flag, ['sqlite', 'yes', 'dry-run', 'private-preview'], true))) {
             usage();
+        }
+        if (array_key_exists($flag, $options)) {
+            throw new RuntimeException('Duplicate CLI option: ' . $flag);
         }
         $options[$flag] = $pair[1] ?? true;
         unset($args[$index]);
@@ -61,6 +67,38 @@ try {
     $project = realpath((string) ($options['project'] ?? getcwd()));
     if ($project === false) {
         throw new RuntimeException('Project directory missing.');
+    }
+    // Private data never flows through GeoCatalog or the public installer.
+    // Must be an explicit command and explicit opt-in, never an automatic fallback.
+    if (str_starts_with($command, 'preview-')) {
+        if (!isset($options['private-preview']) ||
+            array_diff(array_keys($options), ['private-preview']) !== []) {
+            throw new RuntimeException('Private preview requires only --private-preview (no install/project/db options).');
+        }
+        if (!class_exists(\Kighlander\GeoPlzDetails\InternalPreview\Catalog::class)) {
+            require_once dirname(__DIR__) . '/src/InternalPreview/Catalog.php';
+        }
+        if (!class_exists(\Kighlander\GeoPlzDetails\InternalPreview\Connection::class)) {
+            require_once dirname(__DIR__) . '/src/InternalPreview/Connection.php';
+        }
+        $preview = new \Kighlander\GeoPlzDetails\InternalPreview\Catalog(
+            \Kighlander\GeoPlzDetails\InternalPreview\Connection::fromEnvironment(),
+            \Kighlander\GeoPlzDetails\InternalPreview\Catalog::ACKNOWLEDGE,
+        );
+        $response = match ($command) {
+            'preview-check' => count($args) === 0 ? $preview->check() : usage(),
+            'preview-lookup' => count($args) === 1 ? $preview->municipalitiesByPostalCode($args[0]) : usage(),
+            'preview-subdivisions' => count($args) === 2 ? $preview->subdivisionsByPlace($args[0], $args[1]) : usage(),
+            'preview-resolve' => count($args) === 2 || count($args) === 3
+                ? $preview->resolveSelection($args[0], $args[1], $args[2] ?? null) : usage(),
+            default => usage(),
+        };
+        echo json_encode($response,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), PHP_EOL;
+        exit(0);
+    }
+    if (isset($options['private-preview'])) {
+        throw new RuntimeException('--private-preview is only valid with preview-* commands.');
     }
     if ($command === 'install') {
         if ($args !== [] || isset($options['db']) || isset($options['prefix'])) {
@@ -85,9 +123,9 @@ try {
             if (!defined('STDIN') || !stream_isatty(STDIN)) {
                 throw new RuntimeException('Noninteractive installation needs --yes, after reviewing --dry-run.');
             }
-            fwrite(STDERR, 'Create GEO-prefixed tables in this database? Type YES: ');
+            fwrite(STDERR, 'Create GEO-prefixed tables in this database? Type JA: ');
             $answer = trim((string) fgets(STDIN));
-            if ($answer !== 'YES') {
+            if (strtoupper($answer) !== 'JA') {
                 throw new RuntimeException('Installation cancelled without changes.');
             }
         }

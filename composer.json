@@ -24,7 +24,8 @@
   "require": {
     "php": "^8.2",
     "ext-pdo": "*",
-    "ext-zlib": "*"
+    "ext-zlib": "*",
+    "ext-sodium": "*"
   },
   "suggest": {
     "ext-pdo_sqlite": "Required for an SQLite database or local fallback.",
